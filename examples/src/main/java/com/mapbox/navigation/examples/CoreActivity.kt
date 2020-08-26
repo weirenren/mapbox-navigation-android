@@ -27,6 +27,7 @@ import com.mapbox.navigation.examples.core.RouteAlertsActivity
 import com.mapbox.navigation.examples.core.RuntimeRouteStylingActivity
 import com.mapbox.navigation.examples.core.SimpleMapboxNavigationKt
 import com.mapbox.navigation.examples.core.SummaryBottomSheetActivity
+import com.mapbox.navigation.examples.core.WaypointsRerouteActivity
 import kotlinx.android.synthetic.main.activity_core.*
 
 class CoreActivity : AppCompatActivity() {
@@ -105,6 +106,11 @@ class CoreActivity : AppCompatActivity() {
                 getString(R.string.title_replay_waypoints),
                 getString(R.string.description_replay_waypoints),
                 ReplayWaypointsActivity::class.java
+            ),
+            SampleItem(
+                getString(R.string.title_waypoints_reroute),
+                getString(R.string.description_waypoints_reroute),
+                WaypointsRerouteActivity::class.java
             ),
             SampleItem(
                 getString(R.string.title_faster_route),
