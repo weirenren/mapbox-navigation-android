@@ -46,9 +46,6 @@ import com.mapbox.navigation.ui.internal.route.RouteConstants.WAYPOINT_SOURCE_ID
 import com.mapbox.navigation.ui.internal.route.RouteLayerProvider
 import com.mapbox.navigation.ui.internal.utils.MapUtils
 import com.mapbox.navigation.ui.internal.utils.MemoizeUtils.memoize
-import com.mapbox.navigation.ui.route.MapRouteLine.MapRouteLineSupport.buildWayPointFeatureCollection
-import com.mapbox.navigation.ui.route.MapRouteLine.MapRouteLineSupport.calculatePreciseDistanceTraveledAlongLine
-import com.mapbox.navigation.ui.route.MapRouteLine.MapRouteLineSupport.calculateRouteLineSegments
 import com.mapbox.navigation.ui.route.MapRouteLine.MapRouteLineSupport.generateFeatureCollection
 import com.mapbox.navigation.ui.route.MapRouteLine.MapRouteLineSupport.getBelowLayer
 import com.mapbox.navigation.ui.route.MapRouteLine.MapRouteLineSupport.getBooleanStyledValue
@@ -429,6 +426,7 @@ internal class MapRouteLine(
             getRouteFeatureDataProvider(directionsRoutes)
         reinitializeWithRoutes(directionsRoutes, featureDataProvider)
         drawRoutes(routeFeatureData)
+        routeLineFeatureIndex = 0
     }
 
     fun drawIdentifiableRoutes(directionsRoutes: List<IdentifiableRoute>) {
@@ -1178,12 +1176,14 @@ internal class MapRouteLine(
                     }
                 }
 
+            routeFeature.addNumberProperty(ROUTE_LINE_FEATURE_INDEX_KEY, routeLineFeatureIndex++)
                 return RouteFeatureData(
                     route,
                     FeatureCollection.fromFeatures(listOf(routeFeature)),
                     routeGeometry
                 )
             }
+        }
 
         /**
          * Calculates line segments based on the legs in the route line and color representation
@@ -1397,8 +1397,12 @@ internal class MapRouteLine(
                 runningDistance + distFromTargetToLastIndexPoint
             }
         }
+
+        companion object {
+            const val ROUTE_LINE_FEATURE_INDEX_KEY = "ROUTE_LINE_FEATURE_INDEX_KEY"
+            private var routeLineFeatureIndex = 0
+        }
     }
-}
 
 /**
  * Maintains an association between a DirectionsRoute, FeatureCollection

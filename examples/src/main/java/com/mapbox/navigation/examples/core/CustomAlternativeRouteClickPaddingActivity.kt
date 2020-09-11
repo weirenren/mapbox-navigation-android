@@ -1,8 +1,12 @@
 package com.mapbox.navigation.examples.core
 
 import android.annotation.SuppressLint
+import android.graphics.Color
+import android.graphics.PointF
 import android.os.Bundle
+import android.util.Log
 import android.view.View
+import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceManager
 import com.google.android.material.snackbar.Snackbar
@@ -12,14 +16,20 @@ import com.mapbox.android.core.location.LocationEngineCallback
 import com.mapbox.android.core.location.LocationEngineProvider
 import com.mapbox.android.core.location.LocationEngineRequest
 import com.mapbox.android.core.location.LocationEngineResult
-import com.mapbox.api.directions.v5.DirectionsCriteria
 import com.mapbox.api.directions.v5.models.DirectionsRoute
 import com.mapbox.api.directions.v5.models.RouteOptions
+import com.mapbox.geojson.Point
+import com.mapbox.geojson.Polygon
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory
+import com.mapbox.mapboxsdk.geometry.LatLng
 import com.mapbox.mapboxsdk.location.modes.RenderMode
 import com.mapbox.mapboxsdk.maps.MapboxMap
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback
+import com.mapbox.mapboxsdk.maps.Projection
 import com.mapbox.mapboxsdk.maps.Style
+import com.mapbox.mapboxsdk.style.layers.FillLayer
+import com.mapbox.mapboxsdk.style.layers.PropertyFactory
+import com.mapbox.mapboxsdk.style.sources.GeoJsonSource
 import com.mapbox.navigation.base.internal.extensions.applyDefaultParams
 import com.mapbox.navigation.base.internal.extensions.coordinates
 import com.mapbox.navigation.base.trip.model.RouteProgress
@@ -38,23 +48,34 @@ import com.mapbox.navigation.examples.utils.Utils.getRouteFromBundle
 import com.mapbox.navigation.examples.utils.extensions.toPoint
 import com.mapbox.navigation.ui.camera.NavigationCamera
 import com.mapbox.navigation.ui.map.NavigationMapboxMap
+import kotlinx.android.synthetic.main.activity_alternative_route_click_padding.padding_seekbar
+import kotlinx.android.synthetic.main.activity_alternative_route_click_padding.padding_textview
 import kotlinx.android.synthetic.main.activity_basic_navigation_layout.container
 import kotlinx.android.synthetic.main.activity_basic_navigation_layout.fabToggleStyle
 import kotlinx.android.synthetic.main.activity_basic_navigation_layout.mapView
 import kotlinx.android.synthetic.main.activity_basic_navigation_layout.startNavigation
 import timber.log.Timber
 import java.lang.ref.WeakReference
+import java.util.ArrayList
 
 /**
- * This activity shows how to set up a basic turn-by-turn
- * navigation experience with the Navigation SDK and
- * Navigation UI SDK.
+ * This activity shows how to visualize and adjust what is usually an invisible RectF
+ * query box. This Nav SDK builds this box around the map click location. If the
+ * MapRouteClickListener determines that any route lines run through
+ * this invisible box, this is used to figure out which route was selected and
+ * for potentially firing the OnRouteSelectionChangeListener.
  */
-open class BasicNavigationActivity : AppCompatActivity(), OnMapReadyCallback {
+open class CustomAlternativeRouteClickPaddingActivity : AppCompatActivity(), OnMapReadyCallback,
+    MapboxMap.OnMapClickListener {
 
     companion object {
+        const val TAG = "CustomAlternativeRouteClickPaddingActivity"
         const val DEFAULT_INTERVAL_IN_MILLISECONDS = 1000L
         const val DEFAULT_MAX_WAIT_TIME = DEFAULT_INTERVAL_IN_MILLISECONDS * 5
+        const val CLICK_BOX_GEOJSON_SOURCE_ID = "CLICK_BOX_SOURCE_ID"
+        const val CLICK_BOX_LAYER_ID = "CLICK_BOX_LAYER_ID"
+        const val SEEKBAR_STEP = 1
+        const val SEEKBAR_MAX = 150
     }
 
     private var mapboxNavigation: MapboxNavigation? = null
@@ -62,6 +83,9 @@ open class BasicNavigationActivity : AppCompatActivity(), OnMapReadyCallback {
     private var mapInstanceState: Bundle? = null
     private val mapboxReplayer = MapboxReplayer()
     private var directionRoute: DirectionsRoute? = null
+    private var seekBarProgress: Int = 100
+    private var lastMapClickLatLng: LatLng? = null
+    private var clickToShowQuerySnackbarHasBeenShown = false
 
     private val mapStyles = listOf(
         Style.MAPBOX_STREETS,
@@ -74,7 +98,7 @@ open class BasicNavigationActivity : AppCompatActivity(), OnMapReadyCallback {
     @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_basic_navigation_layout)
+        setContentView(R.layout.activity_alternative_route_click_padding)
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync(this)
 
@@ -95,7 +119,46 @@ open class BasicNavigationActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(mapboxMap: MapboxMap) {
         mapboxMap.setStyle(Style.MAPBOX_STREETS) {
             mapboxMap.moveCamera(CameraUpdateFactory.zoomTo(15.0))
-            navigationMapboxMap = NavigationMapboxMap(mapView, mapboxMap, this, null, true, true)
+
+            /**
+             * Initialize the [SeekBar] that can be used to adjust the padding
+             * of the querying box area used in the [MapRouteClickListener].
+             */
+            padding_seekbar.apply {
+                max = (SEEKBAR_MAX - 0) / SEEKBAR_STEP;
+                progress = (40).also {
+                    seekBarProgress = it
+                    padding_textview.text = String.format(getString(R.string.alternative_route_click_padding), it)
+                }
+                setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(seek: SeekBar, progress: Int, fromUser: Boolean) {
+                        progress.let {
+                            seekBarProgress = it
+                            padding_textview.text = String.format(getString(R.string.alternative_route_click_padding), it)
+                            lastMapClickLatLng?.let { latLng ->
+                                adjustPolygonFillLayerArea(latLng)
+                            }
+                        }
+                    }
+
+                    override fun onStartTrackingTouch(seek: SeekBar) {
+                        // Empty because not needed in this example
+                    }
+
+                    override fun onStopTrackingTouch(seek: SeekBar) {
+                        navigationMapboxMap?.updateClickDistancePadding(intArrayOf(
+                            seekBarProgress, seekBarProgress, seekBarProgress, seekBarProgress
+                        ))
+                    }
+                })
+            }
+
+            navigationMapboxMap = NavigationMapboxMap(mapView, mapboxMap, this,
+                null, true, true,
+                intArrayOf(seekBarProgress, seekBarProgress, seekBarProgress, seekBarProgress))
+            navigationMapboxMap?.retrieveMap()?.addOnMapClickListener(this)
+
+            initPaddingPolygonSourceAndLayer()
 
             mapInstanceState?.let { state ->
                 navigationMapboxMap?.restoreStateFrom(state)
@@ -131,12 +194,70 @@ open class BasicNavigationActivity : AppCompatActivity(), OnMapReadyCallback {
                         .accessToken(Utils.getMapboxAccessToken(applicationContext))
                         .coordinates(originLocation.toPoint(), null, latLng.toPoint())
                         .alternatives(true)
-                        .profile(DirectionsCriteria.PROFILE_DRIVING_TRAFFIC)
                         .build(),
                     routesReqCallback
                 )
             }
             true
+        }
+    }
+
+    override fun onMapClick(mapClickLatLng: LatLng): Boolean {
+        navigationMapboxMap?.retrieveMap()?.let { mapboxMap ->
+            mapboxMap.getStyle { style ->
+                lastMapClickLatLng = mapClickLatLng
+                style.getSourceAs<GeoJsonSource>(CLICK_BOX_GEOJSON_SOURCE_ID)?.let { geoJsonSource ->
+                    adjustPolygonFillLayerArea(mapClickLatLng)
+                }
+            }
+        }
+        return true
+    }
+
+    private fun adjustPolygonFillLayerArea(mapClickLatLng: LatLng) {
+        navigationMapboxMap?.retrieveMap()?.let { mapboxMap ->
+            mapboxMap.getStyle { style ->
+                style.getSourceAs<GeoJsonSource>(CLICK_BOX_GEOJSON_SOURCE_ID)?.let { geoJsonSource ->
+                    val mapProjection: Projection = mapboxMap.projection
+                    val mapClickPointF = mapProjection.toScreenLocation(mapClickLatLng)
+                    val leftFloat = (mapClickPointF.x - seekBarProgress)
+                    val rightFloat = (mapClickPointF.x + seekBarProgress)
+                    val topFloat = (mapClickPointF.y - seekBarProgress)
+                    val bottomFloat = (mapClickPointF.y + seekBarProgress)
+
+                    val listOfPointLists: MutableList<List<Point>> = ArrayList()
+                    val pointList: MutableList<Point> = ArrayList()
+
+                    val upperLeftLatLng: LatLng = mapProjection.fromScreenLocation(PointF(leftFloat, topFloat))
+                    val upperRightLatLng: LatLng = mapProjection.fromScreenLocation(PointF(rightFloat, topFloat))
+                    val lowerLeftLatLng: LatLng = mapProjection.fromScreenLocation(PointF(leftFloat, bottomFloat))
+                    val lowerRightLatLng: LatLng = mapProjection.fromScreenLocation(PointF(rightFloat, bottomFloat))
+
+                    pointList.apply {
+                        add(Point.fromLngLat(upperLeftLatLng.longitude, upperLeftLatLng.latitude))
+                        add(Point.fromLngLat(lowerLeftLatLng.longitude, lowerLeftLatLng.latitude))
+                        add(Point.fromLngLat(lowerRightLatLng.longitude, lowerRightLatLng.latitude))
+                        add(Point.fromLngLat(upperRightLatLng.longitude, upperRightLatLng.latitude))
+                        add(Point.fromLngLat(upperLeftLatLng.longitude, upperLeftLatLng.latitude))
+                        listOfPointLists.add(this)
+                        geoJsonSource.setGeoJson(Polygon.fromLngLats(listOfPointLists))
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Add a source and layer to the [Style] so that the click box [Polygon]
+     * can be displayed to visualize the querying area.
+     */
+    private fun initPaddingPolygonSourceAndLayer() {
+        navigationMapboxMap?.retrieveMap()?.getStyle {
+            it.addSource(GeoJsonSource(CLICK_BOX_GEOJSON_SOURCE_ID))
+            it.addLayer(FillLayer(CLICK_BOX_LAYER_ID, CLICK_BOX_GEOJSON_SOURCE_ID)
+                .withProperties(
+                    PropertyFactory.fillColor(Color.RED),
+                    PropertyFactory.fillOpacity(.4f)))
         }
     }
 
@@ -168,10 +289,20 @@ open class BasicNavigationActivity : AppCompatActivity(), OnMapReadyCallback {
         override fun onRoutesReady(routes: List<DirectionsRoute>) {
             if (routes.isNotEmpty()) {
                 directionRoute = routes[0]
-                navigationMapboxMap?.drawRoute(routes[0])
+                navigationMapboxMap?.drawRoutes(routes)
                 startNavigation.visibility = View.VISIBLE
             } else {
                 startNavigation.visibility = View.GONE
+            }
+            if (clickToShowQuerySnackbarHasBeenShown) {
+                Snackbar
+                    .make(
+                        container,
+                        R.string.alternative_route_click_instruction,
+                        LENGTH_SHORT
+                    )
+                    .show()
+                clickToShowQuerySnackbarHasBeenShown = true
             }
         }
 
@@ -198,7 +329,15 @@ open class BasicNavigationActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         fabToggleStyle.setOnClickListener {
-            navigationMapboxMap?.retrieveMap()?.setStyle(mapStyles.shuffled().first())
+            navigationMapboxMap?.retrieveMap()?.setStyle(mapStyles.shuffled().first()) {
+                initPaddingPolygonSourceAndLayer()
+                lastMapClickLatLng?.let {
+                    Log.d(TAG,"lastMapClickLatLng != null")
+                    adjustPolygonFillLayerArea(it)
+                }
+                navigationMapboxMap?.retrieveMap()?.addOnMapClickListener(this)
+
+            }
         }
     }
 
@@ -314,7 +453,7 @@ open class BasicNavigationActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    private class MyLocationEngineCallback(activity: BasicNavigationActivity) :
+    private class MyLocationEngineCallback(activity: CustomAlternativeRouteClickPaddingActivity) :
         LocationEngineCallback<LocationEngineResult> {
 
         private val activityRef = WeakReference(activity)

@@ -436,7 +436,7 @@ class SimpleMapboxNavigationKt :
         stopLocationUpdates()
 
         if (mapboxNavigation.getRoutes()
-            .isEmpty() && mapboxNavigation.getTripSessionState() == TripSessionState.STARTED
+                .isEmpty() && mapboxNavigation.getTripSessionState() == TripSessionState.STARTED
         ) {
             // use this to kill the service and hide the notification when going into the background in the Free Drive state,
             // but also ensure to restart Free Drive when coming back from background by using the channel

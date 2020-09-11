@@ -1,6 +1,8 @@
 package com.mapbox.navigation.ui.route;
 
 import android.content.Context;
+import android.graphics.RectF;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -75,6 +77,8 @@ public class NavigationMapRoute implements LifecycleObserver {
   @Nullable
   private MapRouteLineInitializedCallback routeLineInitializedCallback;
   private List<RouteStyleDescriptor> routeStyleDescriptors;
+  @Nullable
+  private int[] routeClickPadding;
 
   /**
    * Construct an instance of {@link NavigationMapRoute}.
@@ -97,7 +101,8 @@ public class NavigationMapRoute implements LifecycleObserver {
       @Nullable String belowLayer,
       boolean vanishRouteLineEnabled,
       @Nullable MapRouteLineInitializedCallback routeLineInitializedCallback,
-      @Nullable List<RouteStyleDescriptor> routeStyleDescriptors) {
+      @Nullable List<RouteStyleDescriptor> routeStyleDescriptors,
+      @Nullable int[] routeClickPadding) {
     this.routeStyleDescriptors = routeStyleDescriptors;
     this.vanishRouteLineEnabled = vanishRouteLineEnabled;
     this.styleRes = styleRes;
@@ -114,7 +119,8 @@ public class NavigationMapRoute implements LifecycleObserver {
             routeLineInitializedCallback
     );
     this.routeArrow = new MapRouteArrow(mapView, mapboxMap, styleRes, LAYER_ABOVE_UPCOMING_MANEUVER_ARROW);
-    this.mapRouteClickListener = new MapRouteClickListener(this.routeLine);
+    this.routeClickPadding = routeClickPadding;
+    this.mapRouteClickListener = new MapRouteClickListener(this.routeLine, mapboxMap, this.routeClickPadding);
     this.mapRouteProgressChangeListener = buildMapRouteProgressChangeListener();
     this.routeLineInitializedCallback = routeLineInitializedCallback;
     this.lifecycleOwner = lifecycleOwner;
@@ -450,7 +456,7 @@ public class NavigationMapRoute implements LifecycleObserver {
     );
     mapboxMap.removeOnMapClickListener(mapRouteClickListener);
     OnRouteSelectionChangeListener listener = mapRouteClickListener.getOnRouteSelectionChangeListener();
-    mapRouteClickListener = new MapRouteClickListener(routeLine);
+    mapRouteClickListener = new MapRouteClickListener(routeLine, mapboxMap, routeClickPadding);
     mapRouteClickListener.setOnRouteSelectionChangeListener(listener);
     mapboxMap.addOnMapClickListener(mapRouteClickListener);
   }
@@ -462,6 +468,29 @@ public class NavigationMapRoute implements LifecycleObserver {
     mapRouteProgressChangeListener = buildMapRouteProgressChangeListener();
     if (navigation != null) {
       navigation.registerRouteProgressObserver(mapRouteProgressChangeListener);
+    }
+  }
+
+  /**
+   * Updates the array of integers that the {@link MapRouteClickListener}
+   * uses to build an invisible box around the map click location. If the
+   * {@link MapRouteClickListener} determines that any route lines run through
+   * this invisible box, this is used to figure out which route was selected and
+   * for potentially firing the {@link OnRouteSelectionChangeListener}.
+   *
+   * The padding values should be in order of left, top, right, bottom. For example,
+   * the array's first integer will set the padding between the map click location and
+   * the left side of the query {@link RectF}.
+   *
+   * Passing large integers values through this method means that a user doesn't
+   * have to be very accurate with tapping on an actual route line because the invisible
+   * box is large and thus, there's a good chance that a portion of a route line will run
+   * through the query box's area. A smaller rectangle will decrease the chances.
+   */
+  public void updateClickDistancePadding(int[] newRouteClickRectFPadding) {
+    routeClickPadding = newRouteClickRectFPadding;
+    if (mapRouteClickListener != null) {
+      mapRouteClickListener.updateRouteClickPadding(routeClickPadding);
     }
   }
 
@@ -483,6 +512,7 @@ public class NavigationMapRoute implements LifecycleObserver {
     private boolean vanishRouteLineEnabled = false;
     @Nullable private MapRouteLineInitializedCallback routeLineInitializedCallback;
     @Nullable private List<RouteStyleDescriptor> routeStyleDescriptors;
+    @Nullable private int[] routeClickPadding;
 
     /**
      * Instantiates a new Builder.
@@ -553,6 +583,30 @@ public class NavigationMapRoute implements LifecycleObserver {
     }
 
     /**
+     * The array of integers passed through the method builds an invisible box
+     * around the map click location. If the {@link MapRouteClickListener} determines
+     * that any route lines run through this invisible box, this is used to
+     * figure out which route was selected and for potentially firing the
+     * {@link OnRouteSelectionChangeListener}.
+     *
+     * The padding values should be in order of left, top, right, bottom. For example,
+     * the array's first integer will set the padding between the map click location and
+     * the left side of the {@link RectF}.
+     *
+     * Passing a large integers values through this method means that a user doesn't
+     * have to be very accurate with tapping on an actual route line because the invisible
+     * box is large and thus, the chances that a portion of a route line running through the
+     * box's area is high. A smaller rectangle will decrease the chances.
+     *
+     * @return the builder
+     */
+    @NonNull
+    public Builder withCustomRouteClickPadding(int[] newRouteClickPadding) {
+      this.routeClickPadding = newRouteClickPadding;
+      return this;
+    }
+
+    /**
      * Indicate that the route line layer has been added to the current style
      *
      * @return the builder
@@ -579,7 +633,8 @@ public class NavigationMapRoute implements LifecycleObserver {
           belowLayer,
           vanishRouteLineEnabled,
           routeLineInitializedCallback,
-          routeStyleDescriptors
+          routeStyleDescriptors,
+          routeClickPadding
       );
     }
   }
