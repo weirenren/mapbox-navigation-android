@@ -77,26 +77,33 @@ internal class MapboxDirectionsSession(
         routeOptions: RouteOptions,
         routesRequestCallback: RoutesRequestCallback?
     ) {
-        router.getRoute(
-            routeOptions,
-            object : Router.Callback {
-                override fun onResponse(routes: List<DirectionsRoute>) {
-                    this@MapboxDirectionsSession.routes = routes
-                    routesRequestCallback?.onRoutesReady(routes)
-                    // todo log in the future
+        router.getRoute(routeOptions, object : Router.Callback {
+            override fun onResponse(routes: List<DirectionsRoute>) {
+                val fixedRoutes = mutableListOf<DirectionsRoute>()
+                for (route in routes) {
+                    val fixedRouteOptions = route.routeOptions()?.toBuilder()
+                            ?.waypointIndices(routeOptions.waypointIndices()!!)
+                            ?.build()
+                    val fixedRoute = route.toBuilder()
+                            .routeOptions(fixedRouteOptions)
+                            .build()
+                    fixedRoutes.add(fixedRoute)
                 }
-
-                override fun onFailure(throwable: Throwable) {
-                    routesRequestCallback?.onRoutesRequestFailure(throwable, routeOptions)
-                    // todo log in the future
-                }
-
-                override fun onCanceled() {
-                    routesRequestCallback?.onRoutesRequestCanceled(routeOptions)
-                    // todo log in the future
-                }
+                this@MapboxDirectionsSession.routes = fixedRoutes
+                routesRequestCallback?.onRoutesReady(fixedRoutes)
+                // todo log in the future
             }
-        )
+
+            override fun onFailure(throwable: Throwable) {
+                routesRequestCallback?.onRoutesRequestFailure(throwable, routeOptions)
+                // todo log in the future
+            }
+
+            override fun onCanceled() {
+                routesRequestCallback?.onRoutesRequestCanceled(routeOptions)
+                // todo log in the future
+            }
+        })
     }
 
     /**
