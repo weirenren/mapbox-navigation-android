@@ -67,73 +67,95 @@ class MapboxRouteOptionsUpdater(
                     bearings
                 })
                 .radiusesList(let radiusesList@{
-                    if (routeOptions.radiusesList().isNullOrEmpty()) {
+                    val radiusesList = routeOptions.radiusesList()
+                    if (radiusesList.isNullOrEmpty()) {
                         return@radiusesList emptyList<Double>()
                     }
                     mutableListOf<Double>().also {
-                        it.addAll(routeOptions.radiusesList()!!.subList(index, coordinates.size))
+                        it.addAll(radiusesList.subList(index, coordinates.size))
                     }
                 })
                 .approachesList(let approachesList@{
-                    if (routeOptions.approachesList().isNullOrEmpty()) {
+                    val approachesList = routeOptions.approachesList()
+                    if (approachesList.isNullOrEmpty()) {
                         return@approachesList emptyList<String>()
                     }
                     mutableListOf<String>().also {
-                        it.addAll(routeOptions.approachesList()!!.subList(index, coordinates.size))
+                        it.addAll(approachesList.subList(index, coordinates.size))
                     }
                 })
-                .waypointIndicesList(let waypointIndicesList@{
-                    val waypointIndicesList = routeOptions.waypointIndicesList()
-                    if (waypointIndicesList.isNullOrEmpty()) {
-                        return@waypointIndicesList emptyList<Int>()
-                    }
-                    mutableListOf<Int>().also { updatedWaypointIndicesList ->
-                        var updatedStartWaypointIndicesIndex = 0
-                        routeOptions.waypointIndicesList()!!.forEachIndexed { indx, waypointIndex ->
-                            if (waypointIndex <= index) {
-                                updatedStartWaypointIndicesIndex = indx
-                            }
-                        }
-                        updatedWaypointIndicesList.add(waypointIndicesList[updatedStartWaypointIndicesIndex])
-                        updatedWaypointIndicesList.addAll(
-                                waypointIndicesList.subList(updatedStartWaypointIndicesIndex + 1, waypointIndicesList.size).map { it - index }
-                        )
-                    }
-                })
-                .waypointNamesList(let waypointNamesList@{
-                    val waypointNamesList = routeOptions.waypointNamesList()
-                    if (waypointNamesList.isNullOrEmpty()) {
-                        return@waypointNamesList emptyList<String>()
-                    }
-                    mutableListOf<String>().also { updatedWaypointNamesList ->
-                        var updatedStartWaypointNamesIndex = 0
-                        routeOptions.waypointIndicesList()!!.forEachIndexed { indx, waypointIndex ->
-                            if (waypointIndex <= index) {
-                                updatedStartWaypointNamesIndex = indx
-                            }
-                        }
-                        updatedWaypointNamesList.add(waypointNamesList[updatedStartWaypointNamesIndex])
-                        updatedWaypointNamesList.addAll(
-                                waypointNamesList.subList(updatedStartWaypointNamesIndex + 1, waypointNamesList.size)
-                        )
-                    }
-                })
-                .waypointTargetsList(let waypointTargetsList@{
-                    if (routeOptions.waypointTargetsList().isNullOrEmpty()) {
-                        return@waypointTargetsList emptyList<Point>()
-                    }
-                    mutableListOf<Point?>().also {
-                        it.add(null)
-                        it.addAll(
-                            routeOptions.waypointTargetsList()!!.subList(
-                                index + 1,
-                                coordinates.size
-                            )
-                        )
-                    }
-                })
+                .waypointNamesList(getUpdatedWaypointNamesList(routeOptions, index))
+                .waypointTargetsList(getUpdatedWaypointTargetsList(routeOptions, index))
+                .waypointIndicesList(getUpdatedWaypointIndicesList(routeOptions, index))
         }
 
         return RouteOptionsUpdater.RouteOptionsResult.Success(optionsBuilder.build())
+    }
+
+    private fun getUpdatedWaypointNamesList(
+        routeOptions: RouteOptions,
+        currentLegIndex: Int
+    ): MutableList<String> {
+        val waypointNamesList = routeOptions.waypointNamesList()
+        if (waypointNamesList.isNullOrEmpty()) {
+            return mutableListOf()
+        }
+        return mutableListOf<String>().also { updatedWaypointNamesList ->
+            var updatedStartWaypointNamesIndex = 0
+            routeOptions.waypointIndicesList()?.find { it < currentLegIndex }
+            routeOptions.waypointIndicesList()?.forEachIndexed { indx, waypointIndex ->
+                if (waypointIndex <= currentLegIndex) {
+                    updatedStartWaypointNamesIndex = indx
+                }
+            }
+            updatedWaypointNamesList.add(waypointNamesList[updatedStartWaypointNamesIndex])
+            updatedWaypointNamesList.addAll(
+                    waypointNamesList.subList(updatedStartWaypointNamesIndex + 1, waypointNamesList.size)
+            )
+        }
+    }
+
+    private fun getUpdatedWaypointTargetsList(
+            routeOptions: RouteOptions,
+            currentLegIndex: Int
+    ): MutableList<Point> {
+        val waypointTargetsList = routeOptions.waypointTargetsList()
+        if (waypointTargetsList.isNullOrEmpty()) {
+            return mutableListOf()
+        }
+        return mutableListOf<Point>().also { updatedWaypointTargetsList ->
+            var updatedStartWaypointTargetsIndex = 0
+            routeOptions.waypointIndicesList()?.forEachIndexed { indx, waypointIndex ->
+                if (waypointIndex <= currentLegIndex) {
+                    updatedStartWaypointTargetsIndex = indx
+                }
+            }
+            updatedWaypointTargetsList.add(waypointTargetsList[updatedStartWaypointTargetsIndex])
+            updatedWaypointTargetsList.addAll(
+                    waypointTargetsList.subList(updatedStartWaypointTargetsIndex + 1, waypointTargetsList.size)
+            )
+        }
+    }
+
+    private fun getUpdatedWaypointIndicesList(
+            routeOptions: RouteOptions,
+            currentLegIndex: Int
+    ): MutableList<Int> {
+        val waypointIndicesList = routeOptions.waypointIndicesList()
+        if (waypointIndicesList.isNullOrEmpty()) {
+            return mutableListOf()
+        }
+        return mutableListOf<Int>().also { updatedWaypointIndicesList ->
+            var updatedStartWaypointIndicesIndex = 0
+            routeOptions.waypointIndicesList()?.forEachIndexed { indx, waypointIndex ->
+                if (waypointIndex <= currentLegIndex) {
+                    updatedStartWaypointIndicesIndex = indx
+                }
+            }
+            updatedWaypointIndicesList.add(waypointIndicesList[updatedStartWaypointIndicesIndex])
+            updatedWaypointIndicesList.addAll(
+                    waypointIndicesList.subList(updatedStartWaypointIndicesIndex + 1, waypointIndicesList.size).map { it - currentLegIndex }
+            )
+        }
     }
 }

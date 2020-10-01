@@ -79,16 +79,7 @@ internal class MapboxDirectionsSession(
     ) {
         router.getRoute(routeOptions, object : Router.Callback {
             override fun onResponse(routes: List<DirectionsRoute>) {
-                val fixedRoutes = mutableListOf<DirectionsRoute>()
-                for (route in routes) {
-                    val fixedRouteOptions = route.routeOptions()?.toBuilder()
-                            ?.waypointIndices(routeOptions.waypointIndices()!!)
-                            ?.build()
-                    val fixedRoute = route.toBuilder()
-                            .routeOptions(fixedRouteOptions)
-                            .build()
-                    fixedRoutes.add(fixedRoute)
-                }
+                val fixedRoutes = getFixedRoutes(routes, routeOptions)
                 this@MapboxDirectionsSession.routes = fixedRoutes
                 routesRequestCallback?.onRoutesReady(fixedRoutes)
                 // todo log in the future
@@ -169,5 +160,36 @@ internal class MapboxDirectionsSession(
      */
     override fun shutdown() {
         router.shutdown()
+    }
+
+    /**
+     * Temporary method for handle routes with multiple waypoints.
+     * Current Directions API doesn't support more that one waypoint.
+     * Also NavNative returns "null" in "routeOptions" field.
+     * After this two points will fixed - this method can be removed.
+     */
+    private fun getFixedRoutes(
+        routes: List<DirectionsRoute>,
+        routeOptions: RouteOptions
+    ): List<DirectionsRoute> {
+        val fixedRoutes = mutableListOf<DirectionsRoute>()
+        for (route in routes) {
+            val fixedRouteOptions = route.routeOptions()?.toBuilder()?.apply {
+                ifNonNull(routeOptions.waypointIndices()) {
+                    waypointIndices(it)
+                }
+                ifNonNull(routeOptions.waypointNames()) {
+                    waypointNames(it)
+                }
+                ifNonNull(routeOptions.waypointTargets()) {
+                    waypointTargets(it)
+                }
+            }?.build()
+            val fixedRoute = route.toBuilder()
+                    .routeOptions(fixedRouteOptions)
+                    .build()
+            fixedRoutes.add(fixedRoute)
+        }
+        return fixedRoutes
     }
 }
