@@ -41,17 +41,15 @@ import com.mapbox.navigation.examples.utils.extensions.toPoint
 import com.mapbox.navigation.ui.camera.NavigationCamera
 import com.mapbox.navigation.ui.map.NavigationMapboxMap
 import java.lang.ref.WeakReference
-//import kotlinx.android.synthetic.main.activity_reroute_layout.*
 import kotlinx.android.synthetic.main.activity_reroute_layout.container
 import kotlinx.android.synthetic.main.activity_reroute_layout.mapView
 import kotlinx.android.synthetic.main.activity_reroute_layout.startNavigation
-//import kotlinx.android.synthetic.main.activity_waypoints_reroute_layout.*
 import timber.log.Timber
 
 /**
  * This activity shows how to:
- * - observe reroute events with the Navigation SDK's [RoutesObserver];
- * - replace default [RerouteController] and handle re-route events.
+ * - add waypoints to the route;
+ * - observe reroute events with the Navigation SDK's [RoutesObserver].
  */
 class WaypointsRerouteActivity : AppCompatActivity(), OnMapReadyCallback, OffRouteObserver,
         RerouteController.RerouteStateObserver {
@@ -103,11 +101,11 @@ class WaypointsRerouteActivity : AppCompatActivity(), OnMapReadyCallback, OffRou
     }
     private val routesReqCallback = object : RoutesRequestCallback {
         override fun onRoutesReady(routes: List<DirectionsRoute>) {
-            Timber.d("route request success %s", routes.toString())
+            Timber.d("route request success $routes")
         }
 
         override fun onRoutesRequestFailure(throwable: Throwable, routeOptions: RouteOptions) {
-            Timber.e("route request failure %s", throwable.toString())
+            Timber.e("route request failure $throwable")
         }
 
         override fun onRoutesRequestCanceled(routeOptions: RouteOptions) {
@@ -121,8 +119,8 @@ class WaypointsRerouteActivity : AppCompatActivity(), OnMapReadyCallback, OffRou
         }
 
         override fun onEnhancedLocationChanged(
-                enhancedLocation: Location,
-                keyPoints: List<Location>
+            enhancedLocation: Location,
+            keyPoints: List<Location>
         ) = Unit
     }
 
@@ -215,7 +213,6 @@ class WaypointsRerouteActivity : AppCompatActivity(), OnMapReadyCallback, OffRou
                 mapboxNavigation?.requestRoutes(
                         RouteOptions.builder().applyDefaultParams()
                                 .accessToken(Utils.getMapboxAccessToken(applicationContext))
-//                        .coordinates(originLocation.toPoint(), null, latLng.toPoint())
                                 .coordinates(stopsController.coordinates(originLocation))
                                 .waypointIndices("0;${stopsController.stops.size}")
                                 .alternatives(true)
@@ -243,12 +240,8 @@ class WaypointsRerouteActivity : AppCompatActivity(), OnMapReadyCallback, OffRou
             }
             mapboxNavigation?.startTripSession()
             startNavigation.visibility = View.GONE
-//            btnReroute.visibility = View.VISIBLE
             stopLocationUpdates()
         }
-//        btnReroute.setOnClickListener {
-//            mapboxNavigation?.reroute()
-//        }
     }
 
     @SuppressLint("MissingPermission")
@@ -272,9 +265,7 @@ class WaypointsRerouteActivity : AppCompatActivity(), OnMapReadyCallback, OffRou
         )
     }
 
-    private fun updateCameraOnNavigationStateChange(
-            navigationStarted: Boolean
-    ) {
+    private fun updateCameraOnNavigationStateChange(navigationStarted: Boolean) {
         navigationMapboxMap?.apply {
             if (navigationStarted) {
                 updateCameraTrackingMode(NavigationCamera.NAVIGATION_TRACKING_MODE_GPS)
