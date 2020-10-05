@@ -40,19 +40,22 @@ import com.mapbox.navigation.examples.utils.Utils
 import com.mapbox.navigation.examples.utils.extensions.toPoint
 import com.mapbox.navigation.ui.camera.NavigationCamera
 import com.mapbox.navigation.ui.map.NavigationMapboxMap
-import java.lang.ref.WeakReference
 import kotlinx.android.synthetic.main.activity_reroute_layout.container
 import kotlinx.android.synthetic.main.activity_reroute_layout.mapView
 import kotlinx.android.synthetic.main.activity_reroute_layout.startNavigation
 import timber.log.Timber
+import java.lang.ref.WeakReference
 
 /**
  * This activity shows how to:
  * - add waypoints to the route;
  * - observe reroute events with the Navigation SDK's [RoutesObserver].
  */
-class WaypointsRerouteActivity : AppCompatActivity(), OnMapReadyCallback, OffRouteObserver,
-        RerouteController.RerouteStateObserver {
+class WaypointsRerouteActivity :
+    AppCompatActivity(),
+    OnMapReadyCallback,
+    OffRouteObserver,
+    RerouteController.RerouteStateObserver {
 
     companion object {
         private const val DEFAULT_FASTEST_INTERVAL = 500L
@@ -132,8 +135,8 @@ class WaypointsRerouteActivity : AppCompatActivity(), OnMapReadyCallback, OffRou
         mapView.getMapAsync(this)
 
         val mapboxNavigationOptions = MapboxNavigation
-                .defaultNavigationOptionsBuilder(this, Utils.getMapboxAccessToken(this))
-                .build()
+            .defaultNavigationOptionsBuilder(this, Utils.getMapboxAccessToken(this))
+            .build()
 
         mapboxNavigation = MapboxNavigation(mapboxNavigationOptions)
         initListeners()
@@ -196,7 +199,7 @@ class WaypointsRerouteActivity : AppCompatActivity(), OnMapReadyCallback, OffRou
             navigationMapboxMap = NavigationMapboxMap(mapView, mapboxMap, this, true)
 
             mapboxNavigation?.navigationOptions?.locationEngine?.getLastLocation(
-                    locationListenerCallback
+                locationListenerCallback
             )
 
             directionRoute?.let {
@@ -211,14 +214,14 @@ class WaypointsRerouteActivity : AppCompatActivity(), OnMapReadyCallback, OffRou
             routeSettings.destination = latLng.toPoint()
             mapboxMap.locationComponent.lastKnownLocation?.let { originLocation ->
                 mapboxNavigation?.requestRoutes(
-                        RouteOptions.builder().applyDefaultParams()
-                                .accessToken(Utils.getMapboxAccessToken(applicationContext))
-                                .coordinates(stopsController.coordinates(originLocation))
-                                .waypointIndices("0;${stopsController.stops.size}")
-                                .alternatives(true)
-                                .profile(DirectionsCriteria.PROFILE_DRIVING_TRAFFIC)
-                                .build(),
-                        routesReqCallback
+                    RouteOptions.builder().applyDefaultParams()
+                        .accessToken(Utils.getMapboxAccessToken(applicationContext))
+                        .coordinates(stopsController.coordinates(originLocation))
+                        .waypointIndices("0;${stopsController.stops.size}")
+                        .alternatives(true)
+                        .profile(DirectionsCriteria.PROFILE_DRIVING_TRAFFIC)
+                        .build(),
+                    routesReqCallback
                 )
             }
             true
@@ -226,7 +229,7 @@ class WaypointsRerouteActivity : AppCompatActivity(), OnMapReadyCallback, OffRou
 
         if (directionRoute == null) {
             Snackbar.make(container, R.string.msg_long_press_map_to_place_waypoint, LENGTH_SHORT)
-                    .show()
+                .show()
         }
     }
 
@@ -247,21 +250,21 @@ class WaypointsRerouteActivity : AppCompatActivity(), OnMapReadyCallback, OffRou
     @SuppressLint("MissingPermission")
     private fun startLocationUpdates() {
         val requestLocationUpdateRequest =
-                LocationEngineRequest.Builder(DEFAULT_ENGINE_REQUEST_INTERVAL)
-                        .setFastestInterval(DEFAULT_FASTEST_INTERVAL)
-                        .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
-                        .build()
+            LocationEngineRequest.Builder(DEFAULT_ENGINE_REQUEST_INTERVAL)
+                .setFastestInterval(DEFAULT_FASTEST_INTERVAL)
+                .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
+                .build()
 
         mapboxNavigation?.navigationOptions?.locationEngine?.requestLocationUpdates(
-                requestLocationUpdateRequest,
-                locationListenerCallback,
-                mainLooper
+            requestLocationUpdateRequest,
+            locationListenerCallback,
+            mainLooper
         )
     }
 
     private fun stopLocationUpdates() {
         mapboxNavigation?.navigationOptions?.locationEngine?.removeLocationUpdates(
-                locationListenerCallback
+            locationListenerCallback
         )
     }
 
@@ -311,7 +314,7 @@ class WaypointsRerouteActivity : AppCompatActivity(), OnMapReadyCallback, OffRou
     }
 
     private class MyLocationEngineCallback(activity: WaypointsRerouteActivity) :
-            LocationEngineCallback<LocationEngineResult> {
+        LocationEngineCallback<LocationEngineResult> {
 
         private val activityRef = WeakReference(activity)
 
