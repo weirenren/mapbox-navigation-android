@@ -77,24 +77,27 @@ internal class MapboxDirectionsSession(
         routeOptions: RouteOptions,
         routesRequestCallback: RoutesRequestCallback?
     ) {
-        router.getRoute(routeOptions, object : Router.Callback {
-            override fun onResponse(routes: List<DirectionsRoute>) {
-                val fixedRoutes = getFixedRoutes(routes, routeOptions)
-                this@MapboxDirectionsSession.routes = fixedRoutes
-                routesRequestCallback?.onRoutesReady(fixedRoutes)
-                // todo log in the future
-            }
+        router.getRoute(
+            routeOptions,
+            object : Router.Callback {
+                override fun onResponse(routes: List<DirectionsRoute>) {
+                    val fixedRoutes = getFixedRoutes(routes, routeOptions)
+                    this@MapboxDirectionsSession.routes = fixedRoutes
+                    routesRequestCallback?.onRoutesReady(fixedRoutes)
+                    // todo log in the future
+                }
 
-            override fun onFailure(throwable: Throwable) {
-                routesRequestCallback?.onRoutesRequestFailure(throwable, routeOptions)
-                // todo log in the future
-            }
+                override fun onFailure(throwable: Throwable) {
+                    routesRequestCallback?.onRoutesRequestFailure(throwable, routeOptions)
+                    // todo log in the future
+                }
 
-            override fun onCanceled() {
-                routesRequestCallback?.onRoutesRequestCanceled(routeOptions)
-                // todo log in the future
+                override fun onCanceled() {
+                    routesRequestCallback?.onRoutesRequestCanceled(routeOptions)
+                    // todo log in the future
+                }
             }
-        })
+        )
     }
 
     /**
@@ -186,8 +189,8 @@ internal class MapboxDirectionsSession(
                 }
             }?.build()
             val fixedRoute = route.toBuilder()
-                    .routeOptions(fixedRouteOptions)
-                    .build()
+                .routeOptions(fixedRouteOptions)
+                .build()
             fixedRoutes.add(fixedRoute)
         }
         return fixedRoutes

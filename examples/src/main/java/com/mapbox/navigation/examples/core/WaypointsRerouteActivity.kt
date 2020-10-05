@@ -219,6 +219,7 @@ class WaypointsRerouteActivity :
                     RouteOptions.builder().applyDefaultParams()
                         .accessToken(Utils.getMapboxAccessToken(applicationContext))
                         .coordinates(waypointsController.coordinates(originLocation))
+                        .waypointNames("start;finish")
                         .waypointIndices("0;${waypointsController.waypoints.size}")
                         .alternatives(true)
                         .profile(DirectionsCriteria.PROFILE_DRIVING_TRAFFIC)
