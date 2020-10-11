@@ -1,5 +1,6 @@
 package com.mapbox.navigation.core.directions.session
 
+import com.mapbox.api.directions.v5.DirectionsCriteria
 import com.mapbox.api.directions.v5.models.DirectionsRoute
 import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.navigation.base.route.RouteRefreshCallback
@@ -167,7 +168,8 @@ internal class MapboxDirectionsSession(
 
     /**
      * Temporary method for handle routes with multiple waypoints.
-     * Current Directions API doesn't support more that one waypoint.
+     * Current Directions API doesn't support more than one waypoint
+     * for [DirectionsCriteria.PROFILE_DRIVING_TRAFFIC].
      * Also NavNative returns "null" in "routeOptions" field.
      * After this two points will fixed - this method can be removed.
      */
