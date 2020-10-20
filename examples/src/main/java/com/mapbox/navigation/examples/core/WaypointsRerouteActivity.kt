@@ -40,15 +40,17 @@ import com.mapbox.navigation.examples.utils.Utils
 import com.mapbox.navigation.examples.utils.extensions.toPoint
 import com.mapbox.navigation.ui.camera.NavigationCamera
 import com.mapbox.navigation.ui.map.NavigationMapboxMap
-import kotlinx.android.synthetic.main.activity_reroute_layout.container
-import kotlinx.android.synthetic.main.activity_reroute_layout.mapView
-import kotlinx.android.synthetic.main.activity_reroute_layout.startNavigation
+import kotlinx.android.synthetic.main.activity_waypoints_reroute_layout.btnReroute
+import kotlinx.android.synthetic.main.activity_waypoints_reroute_layout.container
+import kotlinx.android.synthetic.main.activity_waypoints_reroute_layout.mapView
+import kotlinx.android.synthetic.main.activity_waypoints_reroute_layout.startNavigation
 import timber.log.Timber
 import java.lang.ref.WeakReference
 
 /**
  * This activity shows how to:
  * - add waypoints to the route;
+ * - manually invoke reroute;
  * - observe reroute events with the Navigation SDK's [RoutesObserver].
  */
 class WaypointsRerouteActivity :
@@ -66,7 +68,7 @@ class WaypointsRerouteActivity :
     private var navigationMapboxMap: NavigationMapboxMap? = null
     private var directionRoute: DirectionsRoute? = null
     private val routeSettings = CoordinatesHolder()
-    private val stopsController = StopsControllerr()
+    private val waypointsController = WaypointsController()
 
     private val locationListenerCallback = MyLocationEngineCallback(this)
     private val tripSessionStateObserver = object : TripSessionStateObserver {
@@ -78,7 +80,7 @@ class WaypointsRerouteActivity :
                     mapboxNavigation?.registerRouteProgressObserver(routeProgressObserver)
                 }
                 TripSessionState.STOPPED -> {
-                    stopsController.clear()
+                    waypointsController.clear()
                     startLocationUpdates()
                     navigationMapboxMap?.hideRoute()
                     updateCameraOnNavigationStateChange(false)
@@ -210,14 +212,14 @@ class WaypointsRerouteActivity :
         }
 
         mapboxMap.addOnMapLongClickListener { latLng ->
-            stopsController.add(latLng)
+            waypointsController.add(latLng)
             routeSettings.destination = latLng.toPoint()
             mapboxMap.locationComponent.lastKnownLocation?.let { originLocation ->
                 mapboxNavigation?.requestRoutes(
                     RouteOptions.builder().applyDefaultParams()
                         .accessToken(Utils.getMapboxAccessToken(applicationContext))
-                        .coordinates(stopsController.coordinates(originLocation))
-                        .waypointIndices("0;${stopsController.stops.size}")
+                        .coordinates(waypointsController.coordinates(originLocation))
+                        .waypointIndices("0;${waypointsController.waypoints.size}")
                         .alternatives(true)
                         .profile(DirectionsCriteria.PROFILE_DRIVING_TRAFFIC)
                         .build(),
@@ -242,8 +244,17 @@ class WaypointsRerouteActivity :
                 navigationMapboxMap?.startCamera(mapboxNavigation?.getRoutes()!![0])
             }
             mapboxNavigation?.startTripSession()
+            btnReroute.visibility = View.VISIBLE
             startNavigation.visibility = View.GONE
             stopLocationUpdates()
+        }
+        btnReroute.setOnClickListener {
+            mapboxNavigation?.getRerouteController()?.reroute(
+                object : RerouteController.RoutesCallback {
+                    override fun onNewRoutes(routes: List<DirectionsRoute>) {
+                    }
+                }
+            )
         }
     }
 
@@ -335,21 +346,21 @@ class WaypointsRerouteActivity :
     }
 }
 
-private class StopsControllerr {
-    val stops = mutableListOf<Point>()
+private class WaypointsController {
+    val waypoints = mutableListOf<Point>()
 
     fun add(latLng: LatLng) {
-        stops.add(latLng.toPoint())
+        waypoints.add(latLng.toPoint())
     }
 
     fun clear() {
-        stops.clear()
+        waypoints.clear()
     }
 
     fun coordinates(originLocation: Location): List<Point> {
         val coordinates = mutableListOf<Point>()
         coordinates.add(originLocation.toPoint())
-        coordinates.addAll(stops)
+        coordinates.addAll(waypoints)
         return coordinates
     }
 }

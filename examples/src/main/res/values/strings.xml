@@ -119,6 +119,7 @@
     <string name="default_unit_type" translatable="false">default_for_device</string>
     <string name="start_navigation">Start Navigation</string>
     <string name="navigate_waypoints_next_stop">Next stop</string>
+    <string name="reroute">Reroute</string>
     <string name="play_history">Play history</string>
     <string name="select_history">Select history</string>
     <string name="msg_long_press_map_to_place_waypoint">Long press on the map to place a waypoint</string>
