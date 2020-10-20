@@ -175,7 +175,7 @@ class TelemetryLocationAndProgressDispatcherTest {
     }
 
     @Test
-    fun proPostLocationsEvents() = runBlocking {
+    fun prePostLocationsEvents() = runBlocking {
         val l = mutableListOf<Location>()
         repeat(42) { l.add(mockk()) }
 

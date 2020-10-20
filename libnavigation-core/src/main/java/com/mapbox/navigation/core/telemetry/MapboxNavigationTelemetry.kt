@@ -454,9 +454,6 @@ internal object MapboxNavigationTelemetry {
                 )
                 estimatedDistance = it.distance().toInt()
                 estimatedDuration = it.duration().toInt()
-
-                // TODO:OZ voiceIndex is not available in SDK 1.0 and was not set in the legacy telemetry        navigationEvent.voiceIndex
-                // TODO:OZ bannerIndex is not available in SDK 1.0 and was not set in the legacy telemetry        navigationEvent.bannerIndex
                 totalStepCount = obtainStepCount(it)
             }
         }

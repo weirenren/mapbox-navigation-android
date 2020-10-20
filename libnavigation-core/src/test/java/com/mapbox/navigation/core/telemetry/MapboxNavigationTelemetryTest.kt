@@ -443,7 +443,7 @@ class MapboxNavigationTelemetryTest {
     }
 
     @Test
-    fun feedback_and_reroute_events_sent_on_arrive() = runBlocking {
+    fun feedback_and_reroute_events_sent_on_arrival() = runBlocking {
         val actions = mutableListOf<suspend (List<Location>, List<Location>) -> Unit>()
         every { callbackDispatcher.accumulatePostEventLocations(capture(actions)) } just Runs
         every { routeProgress.currentState } returns ROUTE_COMPLETE
