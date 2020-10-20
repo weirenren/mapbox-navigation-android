@@ -250,12 +250,12 @@ internal object MapboxNavigationTelemetry {
             rerouteCount.addAndGet(1)
         }
 
-        val currentProgress = callbackDispatcher.routeProgress
+        val navigationRerouteEvent = NavigationRerouteEvent(
+            PhoneState(context),
+            MetricsRouteProgress(callbackDispatcher.routeProgress)
+        )
         callbackDispatcher.accumulatePostEventLocations { preEventBuffer, postEventBuffer ->
-            val navigationRerouteEvent = NavigationRerouteEvent(
-                PhoneState(context),
-                MetricsRouteProgress(currentProgress)
-            ).apply {
+            navigationRerouteEvent.apply {
                 locationsBefore = preEventBuffer.toTelemetryLocations()
                 locationsAfter = postEventBuffer.toTelemetryLocations()
                 secondsSinceLastReroute = dynamicValues.timeSinceLastReroute.get() / ONE_SECOND
@@ -297,12 +297,13 @@ internal object MapboxNavigationTelemetry {
     ) {
         if (dynamicValues.sessionStarted.get()) {
             Log.d(TAG, "collect post event locations for user feedback")
-            val currentProgress = callbackDispatcher.routeProgress
+            val feedbackEvent = NavigationFeedbackEvent(
+                PhoneState(context),
+                MetricsRouteProgress(callbackDispatcher.routeProgress)
+            )
             callbackDispatcher.accumulatePostEventLocations { preEventBuffer, postEventBuffer ->
-                val feedbackEvent = NavigationFeedbackEvent(
-                    PhoneState(context),
-                    MetricsRouteProgress(currentProgress)
-                ).apply {
+                Log.d(TAG, "locations ready")
+                feedbackEvent.apply {
                     this.feedbackType = feedbackType
                     this.source = feedbackSource
                     this.description = description
@@ -400,6 +401,8 @@ internal object MapboxNavigationTelemetry {
         route: DirectionsRoute? = null,
         newLocation: Location? = null
     ) {
+        Log.d(TAG, "populateNavigationEvent")
+
         val directionsRoute = route ?: callbackDispatcher.routeProgress?.route
         val location = newLocation ?: callbackDispatcher.lastLocation
 

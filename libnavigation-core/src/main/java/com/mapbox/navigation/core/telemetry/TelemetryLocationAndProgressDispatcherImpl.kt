@@ -85,7 +85,6 @@ internal class TelemetryLocationAndProgressDispatcherImpl(
     }
 
     override fun onRouteProgressChanged(routeProgress: RouteProgress) {
-        Log.d(TAG, "route progress state = ${routeProgress.currentState}")
         this.routeProgress = routeProgress
         routeProgressChannel.offer(routeProgress)
     }
