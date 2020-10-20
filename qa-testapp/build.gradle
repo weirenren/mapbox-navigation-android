@@ -1,0 +1,81 @@
+plugins {
+
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'kotlin-android-extensions'
+}
+
+android {
+    compileSdkVersion 29
+
+    defaultConfig {
+        applicationId "com.mapbox.navigation.qa"
+        minSdkVersion androidVersions.minSdkVersion
+        targetSdkVersion androidVersions.targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+        multiDexEnabled true
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+}
+
+dependencies {
+    // Support libraries
+    implementation dependenciesList.androidXCore
+    implementation dependenciesList.materialDesign
+    implementation dependenciesList.androidXAppCompat
+    implementation dependenciesList.androidXConstraintLayout
+    implementation dependenciesList.androidXPreference
+
+    // Mapbox Navigation SDK
+    implementation project(':libnavigation-ui')
+    implementation dependenciesList.mapboxAndroidCommon
+    implementation dependenciesList.mapboxLogger
+    implementation dependenciesList.mapboxAnnotationPlugin
+    implementation dependenciesList.mapboxSdkTurf
+
+    // test
+    androidTestImplementation project(':libtesting-ui')
+    androidTestImplementation dependenciesList.testRunner
+    androidTestUtil dependenciesList.testOrchestrator
+
+    // Kotlin support
+    implementation dependenciesList.kotlinStdLib
+
+    //Coroutines
+    implementation dependenciesList.coroutinesAndroid
+
+    implementation dependenciesList.multidex
+
+    // Logging
+    implementation dependenciesList.timber
+
+    // Leak Canary
+    debugImplementation dependenciesList.leakCanaryDebug
+
+    // Networking
+    implementation dependenciesList.mapboxSdkServices
+    implementation(dependenciesList.okhttp) {
+        force = true
+    }
+
+
+    testImplementation 'junit:junit:4.+'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+}
