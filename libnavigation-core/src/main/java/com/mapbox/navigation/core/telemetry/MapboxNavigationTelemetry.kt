@@ -241,7 +241,7 @@ internal object MapboxNavigationTelemetry {
         )
     }
 
-    private fun handleReroute(newRoute: DirectionsRoute) {
+    private suspend fun handleReroute(newRoute: DirectionsRoute) {
         Log.d(TAG, "handleReroute")
         dynamicValues.run {
             val currentTime = Time.SystemImpl.millis()
@@ -253,17 +253,20 @@ internal object MapboxNavigationTelemetry {
         val navigationRerouteEvent = NavigationRerouteEvent(
             PhoneState(context),
             MetricsRouteProgress(callbackDispatcher.routeProgress)
-        )
+        ).apply {
+            secondsSinceLastReroute = dynamicValues.timeSinceLastReroute.get() / ONE_SECOND
+            newDistanceRemaining = newRoute.distance().toInt()
+            newDurationRemaining = newRoute.duration().toInt()
+            newGeometry = obtainGeometry(newRoute)
+        }
+        populateNavigationEvent(navigationRerouteEvent)
+
         callbackDispatcher.accumulatePostEventLocations { preEventBuffer, postEventBuffer ->
             navigationRerouteEvent.apply {
                 locationsBefore = preEventBuffer.toTelemetryLocations()
                 locationsAfter = postEventBuffer.toTelemetryLocations()
-                secondsSinceLastReroute = dynamicValues.timeSinceLastReroute.get() / ONE_SECOND
-                newDistanceRemaining = newRoute.distance().toInt()
-                newDurationRemaining = newRoute.duration().toInt()
-                newGeometry = obtainGeometry(newRoute)
             }
-            populateNavigationEvent(navigationRerouteEvent)
+
             sendMetricEvent(navigationRerouteEvent)
         }
     }
@@ -295,27 +298,30 @@ internal object MapboxNavigationTelemetry {
         feedbackSubType: Array<String>?,
         appMetadata: AppMetadata?
     ) {
-        if (dynamicValues.sessionStarted.get()) {
-            Log.d(TAG, "collect post event locations for user feedback")
-            val feedbackEvent = NavigationFeedbackEvent(
-                PhoneState(context),
-                MetricsRouteProgress(callbackDispatcher.routeProgress)
-            )
-            callbackDispatcher.accumulatePostEventLocations { preEventBuffer, postEventBuffer ->
-                Log.d(TAG, "locations ready")
-                feedbackEvent.apply {
+        telemetryThreadControl.scope.launch {
+            if (dynamicValues.sessionStarted.get()) {
+                Log.d(TAG, "collect post event locations for user feedback")
+                val feedbackEvent = NavigationFeedbackEvent(
+                    PhoneState(context),
+                    MetricsRouteProgress(callbackDispatcher.routeProgress)
+                ).apply {
                     this.feedbackType = feedbackType
                     this.source = feedbackSource
                     this.description = description
                     this.screenshot = screenshot
-                    this.locationsBefore = preEventBuffer.toTelemetryLocations()
-                    this.locationsAfter = postEventBuffer.toTelemetryLocations()
                     this.feedbackSubType = feedbackSubType
                     this.appMetadata = appMetadata
                 }
-
                 populateNavigationEvent(feedbackEvent)
-                sendMetricEvent(feedbackEvent)
+
+                callbackDispatcher.accumulatePostEventLocations { preEventBuffer, postEventBuffer ->
+                    Log.d(TAG, "locations ready")
+                    feedbackEvent.apply {
+                        locationsBefore = preEventBuffer.toTelemetryLocations()
+                        locationsAfter = postEventBuffer.toTelemetryLocations()
+                    }
+                    sendMetricEvent(feedbackEvent)
+                }
             }
         }
     }
