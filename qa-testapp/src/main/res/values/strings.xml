@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Quapp - QA Test App.</string>
+    <string name="app_name">Kimono</string>
     <string-array name="categories">
         <item>Category A</item>
         <item>Category B</item>
