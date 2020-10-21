@@ -347,10 +347,11 @@ class MapboxNavigationTelemetryTest {
         sessionObserverSlot.captured.onNavigationSessionStateChanged(FREE_DRIVE)
 
         val events = mutableListOf<MetricEvent>()
-        verify(exactly = 3) { MapboxMetricsReporter.addEvent(capture(events)) }
+        verify { MapboxMetricsReporter.addEvent(capture(events)) }
         assertTrue(events[0] is NavigationAppUserTurnstileEvent)
         assertTrue(events[1] is NavigationDepartEvent)
         assertTrue(events[2] is NavigationCancelEvent)
+        assertEquals(3, events.size)
         coVerify { callbackDispatcher.clearLocationEventBuffer() }
         verify { callbackDispatcher.resetOriginalRoute(null) }
     }
@@ -365,10 +366,11 @@ class MapboxNavigationTelemetryTest {
         routeProgressChannel.offer(routeProgress)
 
         val events = mutableListOf<MetricEvent>()
-        verify(exactly = 3) { MapboxMetricsReporter.addEvent(capture(events)) }
+        verify { MapboxMetricsReporter.addEvent(capture(events)) }
         assertTrue(events[0] is NavigationAppUserTurnstileEvent)
         assertTrue(events[1] is NavigationDepartEvent)
         assertTrue(events[2] is NavigationArriveEvent)
+        assertEquals(3, events.size)
     }
 
     @Test
@@ -379,11 +381,12 @@ class MapboxNavigationTelemetryTest {
         newRouteChannel.offer(ExternalRoute(originalRoute))
 
         val events = mutableListOf<MetricEvent>()
-        verify(exactly = 4) { MapboxMetricsReporter.addEvent(capture(events)) }
+        verify { MapboxMetricsReporter.addEvent(capture(events)) }
         assertTrue(events[0] is NavigationAppUserTurnstileEvent)
         assertTrue(events[1] is NavigationDepartEvent)
         assertTrue(events[2] is NavigationCancelEvent)
         assertTrue(events[3] is NavigationDepartEvent)
+        assertEquals(4, events.size)
     }
 
     @Test
@@ -399,10 +402,11 @@ class MapboxNavigationTelemetryTest {
         actionSlot.captured.invoke(listOf(), listOf())
 
         val events = mutableListOf<MetricEvent>()
-        verify(exactly = 3) { MapboxMetricsReporter.addEvent(capture(events)) }
+        verify { MapboxMetricsReporter.addEvent(capture(events)) }
         assertTrue(events[0] is NavigationAppUserTurnstileEvent)
         assertTrue(events[1] is NavigationDepartEvent)
         assertTrue(events[2] is NavigationRerouteEvent)
+        assertEquals(3, events.size)
 
         val rerouteEvent = events[2] as NavigationRerouteEvent
         assertEquals(SDK_IDENTIFIER, rerouteEvent.sdkIdentifier)
@@ -461,10 +465,11 @@ class MapboxNavigationTelemetryTest {
         routeProgressChannel.offer(routeProgress)
 
         val events = mutableListOf<MetricEvent>()
-        verify(exactly = 3) { MapboxMetricsReporter.addEvent(capture(events)) }
+        verify { MapboxMetricsReporter.addEvent(capture(events)) }
         assertTrue(events[0] is NavigationAppUserTurnstileEvent)
         assertTrue(events[1] is NavigationDepartEvent)
         assertTrue(events[2] is NavigationArriveEvent)
+        assertEquals(3, events.size)
     }
 
     @Test
@@ -481,17 +486,24 @@ class MapboxNavigationTelemetryTest {
         postUserFeedback()
         newRouteChannel.offer(RerouteRoute(originalRoute))
         postUserFeedback()
+        postUserFeedback()
+        postUserFeedback()
+        postUserFeedback()
 
         sessionObserverSlot.captured.onNavigationSessionStateChanged(FREE_DRIVE)
 
         val events = mutableListOf<MetricEvent>()
-        verify(exactly = 6) { MapboxMetricsReporter.addEvent(capture(events)) }
+        verify { MapboxMetricsReporter.addEvent(capture(events)) }
         assertTrue(events[0] is NavigationAppUserTurnstileEvent)
         assertTrue(events[1] is NavigationDepartEvent)
         assertTrue(events[2] is NavigationFeedbackEvent)
         assertTrue(events[3] is NavigationRerouteEvent)
         assertTrue(events[4] is NavigationFeedbackEvent)
-        assertTrue(events[5] is NavigationCancelEvent)
+        assertTrue(events[5] is NavigationFeedbackEvent)
+        assertTrue(events[6] is NavigationFeedbackEvent)
+        assertTrue(events[7] is NavigationFeedbackEvent)
+        assertTrue(events[8] is NavigationCancelEvent)
+        assertEquals(9, events.size)
     }
 
     @Test
@@ -506,19 +518,28 @@ class MapboxNavigationTelemetryTest {
         sessionObserverSlot.captured.onNavigationSessionStateChanged(ACTIVE_GUIDANCE)
 
         postUserFeedback()
+        postUserFeedback()
+        postUserFeedback()
+        postUserFeedback()
+        postUserFeedback()
         newRouteChannel.offer(RerouteRoute(originalRoute))
         postUserFeedback()
 
         parentJob.cancel()
 
         val events = mutableListOf<MetricEvent>()
-        verify(exactly = 6) { MapboxMetricsReporter.addEvent(capture(events)) }
+        verify { MapboxMetricsReporter.addEvent(capture(events)) }
         assertTrue(events[0] is NavigationAppUserTurnstileEvent)
         assertTrue(events[1] is NavigationDepartEvent)
         assertTrue(events[2] is NavigationFeedbackEvent)
-        assertTrue(events[3] is NavigationRerouteEvent)
+        assertTrue(events[3] is NavigationFeedbackEvent)
         assertTrue(events[4] is NavigationFeedbackEvent)
-        assertTrue(events[5] is NavigationCancelEvent)
+        assertTrue(events[5] is NavigationFeedbackEvent)
+        assertTrue(events[6] is NavigationFeedbackEvent)
+        assertTrue(events[7] is NavigationRerouteEvent)
+        assertTrue(events[8] is NavigationFeedbackEvent)
+        assertTrue(events[9] is NavigationCancelEvent)
+        assertEquals(10, events.size)
     }
 
     @Test
