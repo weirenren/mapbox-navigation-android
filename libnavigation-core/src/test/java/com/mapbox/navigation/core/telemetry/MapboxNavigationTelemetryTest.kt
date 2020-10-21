@@ -443,7 +443,7 @@ class MapboxNavigationTelemetryTest {
     }
 
     @Test
-    fun feedback_and_reroute_events_sent_on_arrival() = runBlocking {
+    fun feedback_and_reroute_events_not_sent_on_arrival() = runBlocking {
         val actions = mutableListOf<suspend (List<Location>, List<Location>) -> Unit>()
         every { callbackDispatcher.accumulatePostEventLocations(capture(actions)) } just Runs
         every { routeProgress.currentState } returns ROUTE_COMPLETE
@@ -461,13 +461,10 @@ class MapboxNavigationTelemetryTest {
         routeProgressChannel.offer(routeProgress)
 
         val events = mutableListOf<MetricEvent>()
-        verify(exactly = 6) { MapboxMetricsReporter.addEvent(capture(events)) }
+        verify(exactly = 3) { MapboxMetricsReporter.addEvent(capture(events)) }
         assertTrue(events[0] is NavigationAppUserTurnstileEvent)
         assertTrue(events[1] is NavigationDepartEvent)
-        assertTrue(events[2] is NavigationFeedbackEvent)
-        assertTrue(events[3] is NavigationRerouteEvent)
-        assertTrue(events[4] is NavigationFeedbackEvent)
-        assertTrue(events[5] is NavigationArriveEvent)
+        assertTrue(events[2] is NavigationArriveEvent)
     }
 
     @Test

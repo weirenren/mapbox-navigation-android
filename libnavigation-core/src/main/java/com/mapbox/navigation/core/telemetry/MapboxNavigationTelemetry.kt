@@ -173,6 +173,7 @@ internal object MapboxNavigationTelemetry {
     private fun sessionStart() {
         Log.d(TAG, "sessionStart")
         telemetryThreadControl.scope.launch {
+            callbackDispatcher.clearLocationEventBuffer()
             callbackDispatcher.resetRouteProgress()
             callbackDispatcher.originalRoute.await().let { route ->
                 dynamicValues.run {
@@ -350,7 +351,6 @@ internal object MapboxNavigationTelemetry {
     private suspend fun processArrival() {
         if (dynamicValues.sessionStarted.get()) {
             Log.d(TAG, "you have arrived")
-            callbackDispatcher.clearLocationEventBuffer()
 
             dynamicValues.run {
                 tripIdentifier.set(obtainUniversalUniqueIdentifier())
