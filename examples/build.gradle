@@ -88,6 +88,8 @@ android {
 }
 
 dependencies {
+
+//    implementation 'com.mapbox.navigation:core:1.0.0-rc.2'
     // Mapbox Navigation SDK
     implementation project(':libnavigation-metrics')
     implementation project(':libdirections-offboard')
@@ -130,7 +132,6 @@ dependencies {
 
     // Logging
     implementation dependenciesList.timber
-
     // Butter Knife
     implementation dependenciesList.butterKnife
     annotationProcessor dependenciesList.butterKnifeProcessor

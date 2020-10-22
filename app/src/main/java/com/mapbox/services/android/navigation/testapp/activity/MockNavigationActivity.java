@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -96,6 +97,12 @@ public class MockNavigationActivity extends AppCompatActivity implements OnMapRe
   private RouteRefresh routeRefresh;
   private boolean isRefreshing = false;
 
+
+  long startTime = 0; //起始时间
+
+
+  long readyEndTime =0; //结束时间
+
   private static class MyBroadcastReceiver extends BroadcastReceiver {
     private final WeakReference<MapboxNavigation> weakNavigation;
 
@@ -115,10 +122,15 @@ public class MockNavigationActivity extends AppCompatActivity implements OnMapRe
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_mock_navigation);
     ButterKnife.bind(this);
+
+
+
     routeRefresh = new RouteRefresh(Mapbox.getAccessToken(), getApplicationContext());
 
     mapView.onCreate(savedInstanceState);
     mapView.getMapAsync(this);
+
+    startTime = System.currentTimeMillis(); //起始时间
 
     Context context = getApplicationContext();
     CustomNavigationNotification customNotification = new CustomNavigationNotification(context);
@@ -133,6 +145,8 @@ public class MockNavigationActivity extends AppCompatActivity implements OnMapRe
     );
     MapboxMetricsReporter.INSTANCE.setMetricsObserver(this);
 
+
+
     navigation.addMilestone(new RouteMilestone.Builder()
       .setIdentifier(BEGIN_ROUTE_MILESTONE)
       .setInstruction(new BeginRouteInstruction())
@@ -143,7 +157,15 @@ public class MockNavigationActivity extends AppCompatActivity implements OnMapRe
           Trigger.gte(TriggerProperty.STEP_DISTANCE_TRAVELED_METERS, 75)
         )
       ).build());
+
+    readyEndTime = System.currentTimeMillis(); //起始时间
+
+    long temp = readyEndTime - startTime;
+    Log.d("GrabMapActivity", String.format("方法使用时间 ready:%d ms ", temp));
+
     customNotification.register(new MyBroadcastReceiver(navigation), context);
+
+
   }
 
   @OnClick(R.id.startRouteButton)

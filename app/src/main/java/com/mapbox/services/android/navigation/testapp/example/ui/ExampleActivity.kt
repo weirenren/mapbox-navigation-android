@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.core.content.ContextCompat
@@ -59,6 +60,13 @@ class ExampleActivity : HistoryActivity(), ExampleView, MetricsObserver {
         setupWith(savedInstanceState)
         addNavigationForHistory(viewModel.retrieveNavigation())
         MapboxMetricsReporter.setMetricsObserver(this)
+//        try {
+//            Thread.sleep(3000)
+//        } catch (e: InterruptedException) {
+//            e.printStackTrace()
+//        }
+
+        Timber.d("aaa")
     }
 
     public override fun onStart() {

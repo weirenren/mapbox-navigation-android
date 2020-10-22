@@ -32,6 +32,8 @@ internal object RouteBuilderProvider {
                 val httpUrl = it.request().url()
                 val skuUrl =
                     urlSkuTokenProvider.obtainUrlWithSkuToken(httpUrl.toString(), httpUrl.querySize())
+
+
                 it.proceed(it.request().newBuilder().url(skuUrl).build())
             }
 }

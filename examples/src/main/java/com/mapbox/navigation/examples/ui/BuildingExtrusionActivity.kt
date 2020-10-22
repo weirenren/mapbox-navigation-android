@@ -18,6 +18,7 @@ import com.mapbox.navigation.ui.OnNavigationReadyCallback
 import com.mapbox.navigation.ui.listeners.NavigationListener
 import com.mapbox.navigation.ui.map.BuildingExtrusionLayer
 import com.mapbox.navigation.ui.map.NavigationMapboxMap
+import com.mapbox.navigation.ui.voice.SpeechPlayer
 import com.mapbox.navigation.utils.internal.ifNonNull
 import kotlinx.android.synthetic.main.activity_building_extrusion.*
 
@@ -103,6 +104,7 @@ class BuildingExtrusionActivity : AppCompatActivity(), OnNavigationReadyCallback
 
                 val optionsBuilder = NavigationViewOptions.builder()
                 optionsBuilder.navigationListener(this)
+//                optionsBuilder.speechAnnouncementListenerchPlayer()
                 optionsBuilder.directionsRoute(route)
                 optionsBuilder.shouldSimulateRoute(true)
                 optionsBuilder.routeProgressObserver(this)

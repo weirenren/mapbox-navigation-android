@@ -52,6 +52,7 @@ import kotlinx.android.synthetic.main.activity_replay_waypoints_layout.startNavi
 import timber.log.Timber
 
 /**
+ * https://docs.mapbox.com/android/beta/navigation/overview/route-replay/
  * This activity shows how to use navigate to various waypoints
  * along a [DirectionsRoute] with the Navigation SDK's
  * [ArrivalObserver] and [ArrivalController].

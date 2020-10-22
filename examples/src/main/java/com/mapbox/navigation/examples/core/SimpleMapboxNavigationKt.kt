@@ -317,6 +317,7 @@ class SimpleMapboxNavigationKt : AppCompatActivity(), OnMapReadyCallback,
     }
 
     private val routesReqCallback = object : RoutesRequestCallback {
+        @SuppressLint("MissingPermission")
         override fun onRoutesReady(routes: List<DirectionsRoute>) {
             originalRoute = routes[0]
             navigationMapboxMap.drawRoutes(routes)

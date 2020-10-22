@@ -45,6 +45,10 @@ dependencies {
     //ktlint
     ktlint dependenciesList.ktlint
 
+    implementation 'io.mockk:mockk-agent-api:1.10.0'
+    implementation 'io.mockk:mockk-agent-jvm:1.10.0'
+    implementation 'org.jetbrains.kotlin:kotlin-reflect:1.3.72'
+
     implementation dependenciesList.mapboxSdkServices
 
     // Network
@@ -54,6 +58,7 @@ dependencies {
     implementation(dependenciesList.okhttpInterceptor) {
         force = true
     }
+
 
     apply from: "${rootDir}/gradle/unit-testing-dependencies.gradle"
 }
